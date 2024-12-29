@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
-import SocketIO from 'socket.io';
+import { Server } from 'socket.io';
+import { instrument } from '@socket.io/admin-ui';
 
 const app = express();
 
@@ -31,7 +32,19 @@ const countRoom = (roomName) => {
 };
 
 const httpServer = http.createServer(app);
-const wsServer = SocketIO(httpServer);
+const wsServer = new Server(httpServer, {
+  cors: {
+    origin: ['https://admin.socket.io'],
+    credentials: true,
+  },
+});
+
+instrument(wsServer, {
+  auth: false,
+  namespaceName: '/admin', // 기본값
+  mode: 'development',
+});
+
 wsServer.on('connection', (socket) => {
   socket.nickname = 'Anonymous';
   socket.onAny((event) => {
