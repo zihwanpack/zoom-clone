@@ -14,10 +14,22 @@ const handleListen = () => console.log(`Listening on http://localhost:3000`);
 const httpServer = http.createServer(app);
 const wsServer = SocketIO(httpServer);
 wsServer.on('connection', (socket) => {
+  socket.onAny((event) => {
+    console.log(`Socket event : ${event}`);
+  });
   socket.on('enter_room', (roomName, done) => {
-    console.log(`Message: ${roomName}`);
     // done을 실행하면 백이 아니라 프론트에서 함수가 실행된다. (실행의 주체는 백)
-    done('hello');
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit('welcome');
+  });
+  // disconnecting으로 서버와 연결 끊기 직전에 실행시킬 수 있다. (disconnect와 다름)
+  socket.on('disconnecting', () => {
+    socket.rooms.forEach((room) => socket.to(room).emit('bye'));
+  });
+  socket.on('new_message', (msg, room, done) => {
+    socket.to(room).emit('new_message', msg);
+    done();
   });
 });
 
